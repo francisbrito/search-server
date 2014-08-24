@@ -1,44 +1,25 @@
 {
-  "name": "bower-component-list",
-  "version": "0.1.0",
-  "description": "Aggregated list of components from the Bower registry and GitHub metadata",
-  "keywords": [
-    "bower",
-    "package",
-    "manager",
-    "web",
-    "component",
-    "package"
-  ],
-  "homepage": "https://github.com/sindresorhus/bower-component-list",
-  "bugs": "https://github.com/sindresorhus/bower-component-list/issues",
   "author": {
     "name": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
     "url": "http://sindresorhus.com"
   },
   "main": "component-list.js",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/sindresorhus/bower-component-list.git"
-  },
+  "repository": "sindresorhus/bower-component-list",
   "dependencies": {
-    "connect": "~2.7.2",
-    "lodash": "~1.0.0-rc.3",
-    "newrelic": "~1.7",
-    "q": "~0.8.12",
-    "request": "~2.12.0",
-    "throat": "~1.0.0"
+    "connect": "^2.25.7",
+    "lodash": "^2.4.1",
+    "newrelic": "^1.10.1",
+    "q": "^1.0.1",
+    "request": "^2.40.0",
+    "throat": "^1.0.0"
   },
   "engines": {
-    "node": "0.10.x"
+    "node": ">=0.10.0"
   },
-  "licenses": [
-    {
-      "type": "MIT"
-    }
-  ],
+  "license": "MIT",
   "scripts": {
     "start": "node server.js && open http://localhost:8011"
-  }
+  },
+  "private": true
 }
