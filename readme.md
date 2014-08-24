@@ -8,18 +8,22 @@ Currently used as the back-end for the [Bower search](https://github.com/bower/s
 
 The registry can also be filtered on a keyword to only get a subset of it. Useful if you for example want to embed a list of plugins for your framework on a website. Example: https://bower-component-list.herokuapp.com/keyword/web-components
 
-
 ### Getting Started
 
 - [Register a new OAuth app](https://github.com/settings/applications/new) on GitHub. This is needed since GitHub allows more API usage for registered apps.
 
-- Set the environment variables `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` from your newly created app. Remember set the `NODE_ENV` to `production` when you deploy.
+- Set the environment variables from your newly created app (alternatively use foreman `.env` file)
 
-- Run `npm start`
+- Install dependencies `npm install`
 
-You can change the port by setting the `PORT` environment variable.
+- Run `npm start` (alternatively run `foreman start`)
 
-
+Environmental variables:
+- `GITHUB_CLIENT_ID`
+- `GITHUB_CLIENT_SECRET`
+- `NODE_ENV` `development` | `production` (remember to set this!)
+- `PORT` - optional to change `connect` server's port
+ 
 ## License
 
 MIT © [Sindre Sorhus](http://sindresorhus.com)

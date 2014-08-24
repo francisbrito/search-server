@@ -1,4 +1,8 @@
 'use strict';
+
+// init new relic agent only in prod
+if (process.env.NODE_ENV === 'production') require('newrelic');
+
 var crypto = require('crypto');
 var connect = require('connect');
 var Q = require('q');

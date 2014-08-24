@@ -23,15 +23,15 @@
     "url": "git://github.com/sindresorhus/bower-component-list.git"
   },
   "dependencies": {
-    "request": "~2.12.0",
-    "lodash": "~1.0.0-rc.3",
-    "q": "~0.8.12",
     "connect": "~2.7.2",
+    "lodash": "~1.0.0-rc.3",
+    "newrelic": "~1.7",
+    "q": "~0.8.12",
+    "request": "~2.12.0",
     "throat": "~1.0.0"
   },
   "engines": {
-    "node": ">=0.8.0",
-    "npm": ">=1.1.65"
+    "node": "0.10.x"
   },
   "licenses": [
     {
