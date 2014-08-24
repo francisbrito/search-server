@@ -86,4 +86,11 @@ setInterval(function () {
 	getComponentListEntity(true);
 }, UPDATE_NEW_REPOS_INTERVAL_IN_MINUTES * 60 * 1000);
 
+// sorry...
+// restart the process once a day
+// i don't have time to actually fix it
+setInterval(function () {
+	process.exit(0);
+}, 1000 * 60 * 60 * 24);
+
 console.log('Server running on port ' + HTTP_PORT);
