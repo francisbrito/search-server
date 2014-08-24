@@ -124,7 +124,7 @@ function fetchComponents(fetchNew) {
 					if (response && response.statusCode === 404) {
 						deferred.resolve();
 					} else {
-						console.error('err github fetch', el.name, response.statusCode, err, body);
+						console.error('err github fetch', el.name, response && response.statusCode, err, body);
 						deferred.resolve();
 					}
 				}
