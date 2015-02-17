@@ -32,11 +32,12 @@ function createCustomEntity(keyword) {
 
 function getComponentListEntity(fetchNew) {
 	fetchComponents(fetchNew || false).then(function (list) {
-		console.log('Finished fetching data from GitHub', '' + new Date());
 
 		registry = list.filter(function (el) {
 			return el != null;
 		});
+
+		console.log('Finished fetching '+list.length+' projects from GitHub', '' + new Date());
 
 		entity = createEntity(registry);
 	}).fail(function (err) {
@@ -97,4 +98,4 @@ setInterval(function () {
 	process.exit(0);
 }, 1000 * 60 * 60 * 24);
 
-console.log('Server running on port ' + HTTP_PORT);
+console.log('Server running on port ' + HTTP_PORT, '' + new Date());
