@@ -50,27 +50,58 @@ function fetchKeywords(repoJson, file, cb) {
 	request.get(url, {json: true}, function (err, response, body) {
 		if (!err && body && body.keywords) {
 			cb(null, body.keywords);
+		} else if (!err && response) {
+			cb(response.statusCode);
 		} else {
-			cb(true);
+			console.error('keywords lookup error: '+err);
+			cb(0); 
 		}
 	});
 }
 
+
+
 function fetchComponents(fetchNew) {
+
 	return Q.fcall(function () {
 		var deferred = Q.defer();
 		request.get(REGISTRY_URL, {json: true, timeout: 60000}, function (err, response, body) {
 			if (!err && response.statusCode === 200) {
 				deferred.resolve(fetchNew === true ? getDiffFromExistingRepos(body) : body);
 			} else {
-				console.log('err bower registry', response.statusCode, err, body);
+				console.log('err bower registry', response ? response.statusCode : null, err, body);
 				deferred.reject(err);
 			}
 		});
 		return deferred.promise;
 	}).then(function (list) {
-		var apiLimitExceeded = false;
-		var results = list.map(throat(5, function (el) {
+
+		function getNewLocation(user,repo,el){
+			var
+				deferred = Q.defer(),
+				site = 'https://github.com',
+				url  = site+'/'+user+'/'+repo;
+
+			request.get(url, {
+				headers: {
+					'User-Agent': 'Bower.io'
+				},
+				timeout: 30000
+			}, function (err, response, body) {
+				if (!err && 200 === response.statusCode){
+					el.url = site+response.request.uri.path;
+					//console.info('Project moved: ('+el.name+') /'+user+'/'+repo+' -> '+response.request.uri.path);
+					deferred.resolve(getProjectDetails(el));
+				} else {
+					//console.info('Project not found: ('+el.name+') /'+user+'/'+repo);
+					deferred.resolve();
+				}
+			});
+
+			return deferred.promise;
+		}
+
+		function getProjectDetails(el) {
 			var deferred = Q.defer();
 			var re = /github\.com\/([\w\-\.]+)\/([\w\-\.]+)/i;
 			var parsedUrl = re.exec(el.url.replace(/\.git$/, ''));
@@ -92,7 +123,7 @@ function fetchComponents(fetchNew) {
 					client_secret: process.env.GITHUB_CLIENT_SECRET
 				},
 				headers: {
-					'User-Agent': 'Node.js'
+					'User-Agent': 'Bower.io'
 				},
 				timeout: 30000
 			}, function (err, response, body) {
@@ -100,6 +131,7 @@ function fetchComponents(fetchNew) {
 					apiLimitExceeded = true;
 					deferred.resolve();
 				} else if (body && /Repository access blocked/.test(body.message)) {
+					console.warn ('Repository access blocked: ' + apiUrl );
 					deferred.resolve();
 				} else if (!err && response.statusCode === 200) {
 					var complete = function (keywords) {
@@ -110,19 +142,26 @@ function fetchComponents(fetchNew) {
 						deferred.resolve(createComponentData(el.name, body, keywords));
 					};
 
-					fetchKeywords(body, 'bower.json', function (err, keywords) {
-						if (err) {
-							fetchKeywords(body, 'package.json', function (err, keywords) {
-								complete(keywords);
-							});
-							return;
+					fetchKeywords(body, 'bower.json', function (statusCode, keywords) {
+						if (null !== statusCode){
+							if (200 === statusCode) { //bower.json missing keywords
+								fetchKeywords(body, 'package.json', function (statusCode, keywords) {
+									complete(keywords);
+								});
+							} else if (0 === statusCode) { //Network error, so don't drop package from results
+								complete();
+							} else { //No bower.json in project.
+								//console.info('Project dropped (No bower.json): ('+el.name+') /'+user+'/'+repo);
+								deferred.resolve();
+							}
+						} else{
+							complete(keywords);
 						}
 
-						complete(keywords);
 					});
 				} else {
 					if (response && response.statusCode === 404) {
-						deferred.resolve();
+						deferred.resolve(getNewLocation(user,repo,el));
 					} else {
 						console.error('err github fetch', el.name, response && response.statusCode, err, body);
 						deferred.resolve();
@@ -133,7 +172,11 @@ function fetchComponents(fetchNew) {
 			});
 
 			return deferred.promise;
-		}));
+		}
+
+		var apiLimitExceeded = false;
+
+		var results = list.map(throat(5, getProjectDetails));
 
 		if (apiLimitExceeded) {
 			console.log('API limit exceeded. Using cached GitHub results.');
@@ -144,7 +187,7 @@ function fetchComponents(fetchNew) {
 			cachedResults = results;
 		}
 
-		console.log('Finished fetching data from Bower registry', '' + new Date());
+		console.log('Finished fetching '+list.length+' records from Bower registry', '' + new Date());
 		return Q.all(fetchNew === true ? cachedResults.concat(results) : results);
 	});
 }
