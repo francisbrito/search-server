@@ -14,7 +14,7 @@ var HTTP_PORT = process.env.PORT || 8011;
 //interval for updating old repos
 var UPDATE_OLD_REPOS_INTERVAL_IN_DAYS =  7;
 //interval for fetching new repos
-var UPDATE_NEW_REPOS_INTERVAL_IN_MINUTES = 120;
+var UPDATE_NEW_REPOS_INTERVAL_IN_MINUTES = 61;
 
 function createEntity(list) {
 	var obj = {json: JSON.stringify(list)};
@@ -37,7 +37,7 @@ function getComponentListEntity(fetchNew) {
 			return el != null;
 		});
 
-		console.log('Finished fetching '+list.length+' projects from GitHub', '' + new Date());
+		console.log('Registry now contains '+registry.length+' projects', '' + new Date());
 
 		entity = createEntity(registry);
 	}).fail(function (err) {

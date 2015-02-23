@@ -4,6 +4,7 @@ var request = require('request');
 var throat = require('throat');
 var Q = require('q');
 var cachedResults;
+var droppedResults = [];
 
 var REGISTRY_URL = 'https://bower.herokuapp.com/packages';
 
@@ -30,7 +31,7 @@ function createComponentData(name, data, keywords) {
 function getDiffFromExistingRepos(newRepos) {
 	if (typeof newRepos === 'object' && typeof cachedResults === 'object') {
 		// get an array of old repos name
-		var existingReposName = cachedResults.map(function (item) {
+		var existingReposName = cachedResults.concat(droppedResults).map(function (item) {
 			if (typeof item != 'undefined') {
 				return item.name;
 			}
@@ -54,7 +55,7 @@ function fetchKeywords(repoJson, file, cb) {
 			cb(response.statusCode);
 		} else {
 			console.error('keywords lookup error: '+err);
-			cb(0); 
+			cb(0);
 		}
 	});
 }
@@ -90,10 +91,11 @@ function fetchComponents(fetchNew) {
 			}, function (err, response, body) {
 				if (!err && 200 === response.statusCode){
 					el.url = site+response.request.uri.path;
-					//console.info('Project moved: ('+el.name+') /'+user+'/'+repo+' -> '+response.request.uri.path);
+					console.info('Project moved: ('+el.name+') /'+user+'/'+repo+' -> '+response.request.uri.path);
 					deferred.resolve(getProjectDetails(el));
 				} else {
-					//console.info('Project not found: ('+el.name+') /'+user+'/'+repo);
+					console.info('Project not found: ('+el.name+') /'+user+'/'+repo);
+					droppedResults.push({name:el.name});
 					deferred.resolve();
 				}
 			});
@@ -103,11 +105,20 @@ function fetchComponents(fetchNew) {
 
 		function getProjectDetails(el) {
 			var deferred = Q.defer();
+
+			//If API limit reached their is no point doing more requests.
+			if (true === apiLimitExceeded){
+				deferred.resolve();
+				return deferred.promise;
+			}
+
 			var re = /github\.com\/([\w\-\.]+)\/([\w\-\.]+)/i;
 			var parsedUrl = re.exec(el.url.replace(/\.git$/, ''));
 
 			// only return components from github
 			if (!parsedUrl) {
+				console.info('Ignored invalid URL: ',el.name,el.url);
+				droppedResults.push({name:el.name});
 				deferred.resolve();
 				return deferred.promise;
 			}
@@ -127,8 +138,11 @@ function fetchComponents(fetchNew) {
 				},
 				timeout: 30000
 			}, function (err, response, body) {
-				if (!err && body && /API Rate Limit Exceeded/.test(body.message)) {
-					apiLimitExceeded = true;
+				if (!err && body && /API rate limit exceeded/.test(body.message)) {
+					if (true !== apiLimitExceeded){
+						console.warn('************* GitHub API limit reached ************* ');
+						apiLimitExceeded = true;
+					}
 					deferred.resolve();
 				} else if (body && /Repository access blocked/.test(body.message)) {
 					console.warn ('Repository access blocked: ' + apiUrl );
@@ -151,7 +165,8 @@ function fetchComponents(fetchNew) {
 							} else if (0 === statusCode) { //Network error, so don't drop package from results
 								complete();
 							} else { //No bower.json in project.
-								//console.info('Project dropped (No bower.json): ('+el.name+') /'+user+'/'+repo);
+								console.info('Project dropped (No bower.json): ('+el.name+') /'+user+'/'+repo);
+								droppedResults.push({name:el.name});
 								deferred.resolve();
 							}
 						} else{
@@ -187,7 +202,7 @@ function fetchComponents(fetchNew) {
 			cachedResults = results;
 		}
 
-		console.log('Finished fetching '+list.length+' records from Bower registry', '' + new Date());
+		console.log('Processing '+list.length+' records from Bower registry', '' + new Date());
 		return Q.all(fetchNew === true ? cachedResults.concat(results) : results);
 	});
 }
